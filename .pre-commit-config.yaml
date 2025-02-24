@@ -1,0 +1,32 @@
+# 这是 pre-commit hooks 的配置文件。
+# 它指定了要与 pre-commit 一起使用的仓库和 hooks。
+# 
+# 第一个仓库是 `pre-commit-hooks`，来自 `https://github.com/pre-commit/pre-commit-hooks`：
+# - `rev: v4.5.0` 指定了仓库的版本。
+# - 从这个仓库中包含的 hooks 有：
+#   - `trailing-whitespace`：删除尾随空格。
+#   - `end-of-file-fixer`：确保文件以换行符结尾。
+#   - `check-yaml`：检查 YAML 文件的语法错误。
+#   - `check-added-large-files`：防止将大文件添加到仓库中。
+#
+# 第二个仓库是 `black`，来自 `https://github.com/psf/black`：
+# - `rev: 24.2.0` 指定了仓库的版本。
+# - 从这个仓库中包含的 hook 有：
+#   - `black`：格式化 Python 代码以遵循 Black 代码风格。
+#     - `language_version: python3` 指定了要使用的 Python 版本。
+#     - `args: [--line-length=100]` 设置最大行长度为 100 个字符。
+repos:
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+    -   id: trailing-whitespace
+    -   id: end-of-file-fixer
+    -   id: check-yaml
+    -   id: check-added-large-files
+
+-   repo: https://github.com/psf/black
+    rev: 24.2.0
+    hooks:
+    -   id: black
+        language_version: python3
+        args: [--line-length=100]

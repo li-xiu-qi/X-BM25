@@ -41,13 +41,16 @@ BM25 是一种常用于信息检索的概率排序算法，它根据文档与查
 def __init__(self, corpus: List[str], k1: float = 1.5, b: float = 0.75, stopwords: tuple = ()):
 ```
 
-- **参数**：
-  - `corpus`：文档字符串列表。
-  - `k1`：控制词频饱和度的参数，默认值为 `1.5`。
-  - `b`：控制文档长度归一化的参数，默认值为 `0.75`。
-  - `stopwords`：停用词元组，默认值为空。
-- **行为**：初始化文档集合，计算文档长度、平均长度，并构建词频（TF）和文档频率（DF）索引。
-- **异常**：若 `corpus` 为空，抛出 `ValueError`。
+参数：
+
+- `corpus`：文档字符串列表。
+- `k1`：控制词频饱和度的参数，默认值为 1.5。
+- `b`：控制文档长度归一化的参数，默认值为 0.75。
+- `stopwords`：停用词元组，默认值为空。
+
+行为：初始化文档集合，计算文档长度、平均长度，并构建词频（TF）和文档频率（DF）索引。
+
+异常：若 `corpus` 为空，抛出 `ValueError`。
 
 #### 抽象方法
 
@@ -56,7 +59,7 @@ def __init__(self, corpus: List[str], k1: float = 1.5, b: float = 0.75, stopword
 def _tokenize(self, text: str) -> List[str]:
 ```
 
-- 子类必须实现此方法，定义语言特定的分词逻辑。
+子类必须实现此方法，定义语言特定的分词逻辑。
 
 #### 核心方法
 
@@ -65,9 +68,23 @@ def _tokenize(self, text: str) -> List[str]:
   - `self.tf`：列表，记录每个文档中每个词的频率。
   - `self.df`：字典，记录每个词在多少个文档中出现过。
 - `_score(self, query_tokens: List[str], doc_id: int) -> float`：计算查询与某文档的 BM25 分数。
-  - **公式**：$\sum (\text{IDF} \times \text{TF\_part})$，其中：
-    - $\text{IDF} = \log\left(\frac{N - \text{DF} + 0.5}{\text{DF} + 0.5} + 1\right)$
-    - $\text{TF\_part} = \frac{\text{freq} \times (k1 + 1)}{\text{freq} + k1 \times (1 - b + b \times \frac{\text{doc\_len}}{\text{avg\_doc\_len}})}$
+
+公式：
+
+$$
+\sum (\text{IDF} \times \text{TF\_part})
+$$
+
+其中：
+
+$$
+\text{IDF} = \log\left(\frac{N - \text{DF} + 0.5}{\text{DF} + 0.5} + 1\right)
+$$
+
+$$
+\text{TF\_part} = \frac{\text{freq} \times (k1 + 1)}{\text{freq} + k1 \times (1 - b + b \times \frac{\text{doc\_len}}{\text{avg\_doc\_len}})}
+$$
+
 - `search(self, query: str, top_k: int = 5) -> List[tuple]`：对查询进行分词，计算所有文档的分数，返回前 `top_k` 个结果（格式为 `(doc_id, score)` 元组）。
 - `save(self, filepath: str)`：将索引保存为 JSON 或 Pickle 文件。
 - `load(cls, filepath: str, corpus: List[str])`：类方法，从文件中加载索引并重建 BM25 实例。
@@ -84,7 +101,7 @@ def _tokenize(self, text: str) -> List[str]:
 def __init__(self, corpus: List[str], k1: float = 1.5, b: float = 0.75, stopwords: tuple = STOPWORDS_EN_PLUS):
 ```
 
-- 初始化英文词干提取器（使用 `PyStemmer`）并使用默认英文停用词。
+初始化英文词干提取器（使用 `PyStemmer`）并使用默认英文停用词。
 
 ##### 分词方法
 
@@ -92,12 +109,14 @@ def __init__(self, corpus: List[str], k1: float = 1.5, b: float = 0.75, stopword
 def _tokenize(self, text: str) -> List[str]:
 ```
 
-- **步骤**：
-  - 使用正则表达式去除非字母数字字符并转换为小写。
-  - 将文本分割为单词。
-  - 使用 `PyStemmer` 进行词干提取。
-  - 过滤停用词。
-- **返回**：处理后的词列表。
+步骤：
+
+1. 使用正则表达式去除非字母数字字符并转换为小写。
+2. 将文本分割为单词。
+3. 使用 `PyStemmer` 进行词干提取。
+4. 过滤停用词。
+
+返回：处理后的词列表。
 
 #### `ChineseBM25`
 
@@ -109,7 +128,7 @@ def _tokenize(self, text: str) -> List[str]:
 def __init__(self, corpus: List[str], k1: float = 1.5, b: float = 0.75, stopwords: tuple = STOPWORDS_CHINESE):
 ```
 
-- 使用默认中文停用词。
+使用默认中文停用词。
 
 ##### 分词方法
 
@@ -117,10 +136,12 @@ def __init__(self, corpus: List[str], k1: float = 1.5, b: float = 0.75, stopword
 def _tokenize(self, text: str) -> List[str]:
 ```
 
-- **步骤**：
-  - 使用 `jieba.cut` 进行中文分词。
-  - 过滤停用词。
-- **返回**：处理后的词列表。
+步骤：
+
+1. 使用 `jieba.cut` 进行中文分词。
+2. 过滤停用词。
+
+返回：处理后的词列表。
 
 ### 工厂和工具函数
 
@@ -130,11 +151,14 @@ def _tokenize(self, text: str) -> List[str]:
 def create_bm25(corpus: List[str], language: str, k1: float = 1.5, b: float = 0.75, stopwords: tuple = None):
 ```
 
-- **用途**：根据指定语言创建 `EnglishBM25` 或 `ChineseBM25` 实例。
-- **参数**：
-  - `language`："english"/"en" 或 "chinese"/"cn"。
-  - `stopwords`：可选的自定义停用词，默认使用语言特定的停用词。
-- **异常**：不支持的语言会抛出 `ValueError`。
+用途：根据指定语言创建 `EnglishBM25` 或 `ChineseBM25` 实例。
+
+参数：
+
+- `language`："english"/"en" 或 "chinese"/"cn"。
+- `stopwords`：可选的自定义停用词，默认使用语言特定的停用词。
+
+异常：不支持的语言会抛出 `ValueError`。
 
 #### `bm25_search`
 
@@ -142,30 +166,32 @@ def create_bm25(corpus: List[str], language: str, k1: float = 1.5, b: float = 0.
 def bm25_search(corpus: List[str], query: str, language: str, top_k: int = 5, k1: float = 1.5, b: float = 0.75, stopwords: tuple = None):
 ```
 
-- **用途**：一键执行 BM25 搜索操作。
-- **返回**：前 `top_k` 个结果的 `(doc_id, score, document_text)` 元组列表。
+用途：一键执行 BM25 搜索操作。
 
-### `load_bm25`
+返回：前 `top_k` 个结果的 `(doc_id, score, document_text)` 元组列表。
+
+#### `load_bm25`
 
 ```python
-def load_bm25(filepath: str, corpus: List[str])
-
+def load_bm25(filepath: str, corpus: List[str]):
 ```
 
-- **`用途`**:加载索引
-- **`返回`**：BM25对象
+用途：加载索引。
+
+返回：BM25 对象。
 
 ## BM25 公式
 
 BM25 基于词频（TF）和文档频率（DF）对文档进行评分。评分公式如下：
 
-\[
+$$
 \text{Score}(d, q) = \sum_{t \in q} \text{IDF}(t) \times \text{TF}_{t, d}
-\]
+$$
 
 其中：
 
-- \( d \) 是文档，\( q \) 是查询。
+- \( d \) 是文档，
+- \( q \) 是查询。
 - \( \text{IDF}(t) \) 是逆文档频率（Inverse Document Frequency），衡量词 \( t \) 在语料库中的稀有性。
 - \( \text{TF}_{t, d} \) 是词 \( t \) 在文档 \( d \) 中的词频，经过归一化处理。
 
@@ -173,9 +199,9 @@ BM25 基于词频（TF）和文档频率（DF）对文档进行评分。评分�
 
 逆文档频率（IDF）衡量词 \( t \) 在语料库中的重要性，公式为：
 
-\[
+$$
 \text{IDF}(t) = \log \left( \frac{N - \text{DF}(t) + 0.5}{\text{DF}(t) + 0.5} + 1 \right)
-\]
+$$
 
 其中：
 
@@ -186,9 +212,9 @@ BM25 基于词频（TF）和文档频率（DF）对文档进行评分。评分�
 
 词频部分对词 \( t \) 在文档 \( d \) 中的频率进行归一化处理，公式如下：
 
-\[
+$$
 \text{TF}_{t, d} = \frac{f_{t, d} \times (k1 + 1)}{f_{t, d} + k1 \times \left( 1 - b + b \times \frac{\text{len}(d)}{\text{avg\_len}} \right)}
-\]
+$$
 
 其中：
 
@@ -201,16 +227,15 @@ BM25 基于词频（TF）和文档频率（DF）对文档进行评分。评分�
 
 最终的 BM25 分数是所有查询词的 IDF 和 TF 的加权和：
 
-\[
+$$
 \text{Score}(d, q) = \sum_{t \in q} \left( \log \left( \frac{N - \text{DF}(t) + 0.5}{\text{DF}(t) + 0.5} + 1 \right) \times \frac{f_{t, d} \times (k1 + 1)}{f_{t, d} + k1 \times \left( 1 - b + b \times \frac{\text{len}(d)}{\text{avg\_len}} \right)} \right)
-\]
+$$
 
 ## 使用方法
 
 ```python
 from bm25 import load_bm25, create_bm25
 import os
-
 
 # 测试代码
 if __name__ == "__main__":
@@ -281,7 +306,6 @@ if __name__ == "__main__":
     results_pkl = loaded_bm25_cn_pkl.search(chinese_query, top_k=3)
     for doc_id, score in results_pkl:
         print(f"文档ID: {doc_id}, 得分: {score:.4f}, 文本: {chinese_corpus[doc_id]}")
-
 ```
 
 ## 依赖
