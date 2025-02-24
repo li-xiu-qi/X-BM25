@@ -229,6 +229,7 @@ def load_bm25(filepath: str, corpus: List[str]):
         BM25实例
     """
     return AbstractBM25.load(filepath, corpus)
+
 # 通用的搜索函数
 def bm25_search(corpus: List[str], query: str, language: str, top_k: int = 5, k1: float = 1.5, b: float = 0.75, stopwords: tuple = None):
     """
