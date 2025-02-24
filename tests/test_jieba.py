@@ -1,7 +1,7 @@
 import jieba
 
 
-sentence = "我来自北京清华大学"
+sentence = "@xiaoke，hello！我来自北京清华大学"
 
 # 全模式
 seg_list = jieba.cut(sentence, cut_all=True)

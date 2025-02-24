@@ -175,7 +175,8 @@ class EnglishBM25(AbstractBM25):
 
     def _tokenize(self, text: str) -> List[str]:
         """英文分词：使用正则表达式预处理 + PyStemmer + 停用词过滤"""
-        text = re.sub(r'[^a-zA-Z0-9\s]', '', text.lower())
+        text = text.lower()
+        text = re.sub(r'[^\u4e00-\u9fa5a-zA-Z0-9\s]', '', text)
         tokens = text.split()
         return [self.stemmer.stemWord(token) for token in tokens if token and token not in self.stopwords]
 
@@ -189,6 +190,7 @@ class ChineseBM25(AbstractBM25):
 
     def _tokenize(self, text: str) -> List[str]:
         """中文分词：使用jieba并过滤停用词"""
+        text = re.sub(r'[^\u4e00-\u9fa5a-zA-Z]', '', text)
         tokens = jieba.cut(text)
         return [token for token in tokens if token and token not in self.stopwords]
 
