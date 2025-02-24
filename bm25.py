@@ -1,9 +1,11 @@
 from abc import ABC, abstractmethod
-from typing import List, Dict
+from typing import List
 import math
 import jieba
 import Stemmer  # PyStemmer 库，用于英文词干提取
 import re  # 用于英文文本预处理
+import json  # 用于保存和加载 JSON 格式
+import pickle  # 用于保存和加载 Pickle 格式
 from stopwords import (
     STOPWORDS_EN_PLUS,
     STOPWORDS_CHINESE,
@@ -98,6 +100,70 @@ class AbstractBM25(ABC):
         scores.sort(key=lambda x: x[1], reverse=True)
         return scores[:top_k]
 
+    def save(self, filepath: str):
+        """
+        将BM25索引保存到文件（支持 JSON 和 Pickle 格式）
+        
+        Args:
+            filepath: 保存文件的路径（.json 或 .pkl）
+        Raises:
+            ValueError: 如果文件扩展名不支持
+        """
+        data = {
+            'df': self.df,
+            'tf': self.tf,
+            'k1': self.k1,
+            'b': self.b,
+            'language': 'english' if isinstance(self, EnglishBM25) else 'chinese',
+            'stopwords': list(self.stopwords)
+        }
+        if filepath.endswith('.json'):
+            with open(filepath, 'w', encoding='utf-8') as f:
+                json.dump(data, f, indent=4, ensure_ascii=False)
+        elif filepath.endswith('.pkl'):
+            with open(filepath, 'wb') as f:
+                pickle.dump(data, f)
+        else:
+            raise ValueError("Unsupported file extension. Use .json or .pkl.")
+
+    @classmethod
+    def load(cls, filepath: str, corpus: List[str]):
+        """
+        从文件加载BM25索引（支持 JSON 和 Pickle 格式）
+        
+        Args:
+            filepath: 索引文件的路径（.json 或 .pkl）
+            corpus: 原始文档集合，用于初始化
+        Returns:
+            EnglishBM25 或 ChineseBM25 实例
+        Raises:
+            ValueError: 如果文件扩展名或语言不支持
+        """
+        if filepath.endswith('.json'):
+            with open(filepath, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+        elif filepath.endswith('.pkl'):
+            with open(filepath, 'rb') as f:
+                data = pickle.load(f)
+        else:
+            raise ValueError("Unsupported file extension. Use .json or .pkl.")
+
+        language = data['language']
+        if language == 'english':
+            bm25_cls = EnglishBM25
+        elif language == 'chinese':
+            bm25_cls = ChineseBM25
+        else:
+            raise ValueError("Unsupported language in saved data.")
+
+        stopwords = tuple(data['stopwords'])
+        bm25 = bm25_cls(corpus, data['k1'], data['b'], stopwords)
+        bm25.df = data['df']
+        bm25.tf = data['tf']
+        bm25.doc_lengths = [sum(tf_doc.values()) for tf_doc in bm25.tf]
+        bm25.avg_doc_length = sum(bm25.doc_lengths) / len(bm25.doc_lengths) if bm25.doc_lengths else 0
+        return bm25
+
 # 英文BM25实现（使用 PyStemmer 和停用词）
 class EnglishBM25(AbstractBM25):
     def __init__(self, corpus: List[str], k1: float = 1.5, b: float = 0.75, stopwords: tuple = STOPWORDS_EN_PLUS):
@@ -111,7 +177,6 @@ class EnglishBM25(AbstractBM25):
         """英文分词：使用正则表达式预处理 + PyStemmer + 停用词过滤"""
         text = re.sub(r'[^a-zA-Z0-9\s]', '', text.lower())
         tokens = text.split()
-        # 进行词干提取并过滤停用词
         return [self.stemmer.stemWord(token) for token in tokens if token and token not in self.stopwords]
 
 # 中文BM25实现
@@ -128,7 +193,11 @@ class ChineseBM25(AbstractBM25):
         return [token for token in tokens if token and token not in self.stopwords]
 
 # 工厂函数
-def create_bm25(corpus: List[str], language: str, k1: float = 1.5, b: float = 0.75, stopwords: tuple = None):
+def create_bm25(corpus: List[str],
+                language: str, 
+                k1: float = 1.5,
+                b: float = 0.75,
+                stopwords: tuple = None):
     """
     创建BM25实例的工厂函数
     
@@ -148,7 +217,18 @@ def create_bm25(corpus: List[str], language: str, k1: float = 1.5, b: float = 0.
         return ChineseBM25(corpus, k1, b, stopwords)
     else:
         raise ValueError("Unsupported language. Please choose 'english/en' or 'chinese/cn'.")
-
+    
+def load_bm25(filepath: str, corpus: List[str]):
+    """
+    从文件加载BM25实例
+    
+    Args:
+        filepath: 索引文件的路径（.json 或 .pkl）
+        corpus: 原始文档集合，用于初始化
+    Returns:
+        BM25实例
+    """
+    return AbstractBM25.load(filepath, corpus)
 # 通用的搜索函数
 def bm25_search(corpus: List[str], query: str, language: str, top_k: int = 5, k1: float = 1.5, b: float = 0.75, stopwords: tuple = None):
     """
@@ -158,32 +238,4 @@ def bm25_search(corpus: List[str], query: str, language: str, top_k: int = 5, k1
     results = bm25.search(query, top_k)
     return [(doc_id, score, corpus[doc_id]) for doc_id, score in results]
 
-# 测试代码
-if __name__ == "__main__":
-    # 英文测试
-    english_corpus = [
-        "this is a sample document about machine learning",
-        "machine learning is fascinating and useful",
-        "this document discusses deep learning techniques",
-        "another sample about artificial intelligence"
-    ]
-    english_query = "machine learning"
-    english_results = bm25_search(english_corpus, english_query, 'english', top_k=3)
-    print("英文查询:", english_query)
-    for doc_id, score, text in english_results:
-        print(f"文档ID: {doc_id}, 得分: {score:.4f}, 文本: {text}")
 
-    print("\n")
-
-    # 中文测试
-    chinese_corpus = [
-        "这是一个关于机器学习的样本文档",
-        "机器学习既迷人又实用",
-        "本文档讨论深度学习技术",
-        "另一个关于人工智能的样本"
-    ]
-    chinese_query = "机器学习"
-    chinese_results = bm25_search(chinese_corpus, chinese_query, 'chinese', top_k=3)
-    print("中文查询:", chinese_query)
-    for doc_id, score, text in chinese_results:
-        print(f"文档ID: {doc_id}, 得分: {score:.4f}, 文本: {text}")
