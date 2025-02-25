@@ -10,6 +10,7 @@ from stopwords import (
     STOPWORDS_EN_PLUS,
     STOPWORDS_CHINESE,
 )
+from detect_language import detect_language
 
 # 抽象基类
 class AbstractBM25(ABC):
@@ -194,9 +195,26 @@ class ChineseBM25(AbstractBM25):
         tokens = jieba.cut(text)
         return [token for token in tokens if token and token not in self.stopwords]
 
+class MixedLanguageBM25(AbstractBM25):
+    def __init__(self, corpus: List[str], k1: float = 1.5, b: float = 0.75, stopwords_en: tuple = STOPWORDS_EN_PLUS, stopwords_cn: tuple = STOPWORDS_CHINESE):
+        """
+        混合语言BM25实现，自动检测语言并使用相应的分词器和停用词过滤
+        """
+        self.english_bm25 = EnglishBM25(corpus, k1, b, stopwords_en)
+        self.chinese_bm25 = ChineseBM25(corpus, k1, b, stopwords_cn)
+        super().__init__(corpus, k1, b, stopwords_en + stopwords_cn)
+
+    def _tokenize(self, text: str) -> List[str]:
+        """根据检测到的语言选择相应的分词器"""
+        language = detect_language(text)
+        if language == 'en':
+            return self.english_bm25._tokenize(text)
+        else:
+            return self.chinese_bm25._tokenize(text)
+
 # 工厂函数
 def create_bm25(corpus: List[str],
-                language: str, 
+                language: str = 'mixed', 
                 k1: float = 1.5,
                 b: float = 0.75,
                 stopwords: tuple = None):
@@ -217,8 +235,12 @@ def create_bm25(corpus: List[str],
     elif language in ['chinese', 'cn']:
         stopwords = stopwords if stopwords is not None else STOPWORDS_CHINESE
         return ChineseBM25(corpus, k1, b, stopwords)
+    elif language in ['mixed']:
+        stopwords_en = stopwords if stopwords is not None else STOPWORDS_EN_PLUS
+        stopwords_cn = stopwords if stopwords is not None else STOPWORDS_CHINESE
+        return MixedLanguageBM25(corpus, k1, b, stopwords_en, stopwords_cn)
     else:
-        raise ValueError("Unsupported language. Please choose 'english/en' or 'chinese/cn'.")
+        raise ValueError("Unsupported language. Please choose 'english/en', 'chinese/cn', or 'mixed'.")
     
 def load_bm25(filepath: str, corpus: List[str]):
     """
@@ -233,7 +255,7 @@ def load_bm25(filepath: str, corpus: List[str]):
     return AbstractBM25.load(filepath, corpus)
 
 # 通用的搜索函数
-def bm25_search(corpus: List[str], query: str, language: str, top_k: int = 5, k1: float = 1.5, b: float = 0.75, stopwords: tuple = None):
+def bm25_search(corpus: List[str], query: str, language: str = 'mixed', top_k: int = 5, k1: float = 1.5, b: float = 0.75, stopwords: tuple = None):
     """
     执行BM25搜索
     """

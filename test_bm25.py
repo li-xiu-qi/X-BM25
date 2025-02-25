@@ -71,3 +71,36 @@ if __name__ == "__main__":
     results_pkl = loaded_bm25_cn_pkl.search(chinese_query, top_k=3)
     for doc_id, score in results_pkl:
         print(f"文档ID: {doc_id}, 得分: {score:.4f}, 文本: {chinese_corpus[doc_id]}")
+
+    print("\n")
+
+    # 混合语言测试
+    mixed_corpus = [
+        "this is a sample document about 机器学习",
+        "machine learning is fascinating and useful",
+        "这是一个关于深度学习的样本文档",
+        "another sample about 人工智能"
+    ]
+    mixed_query = "机器学习"
+
+    # 创建并保存为 JSON
+    bm25_mixed_json = create_bm25(mixed_corpus, 'mixed')
+    bm25_mixed_json.save(os.path.join(output_dir, 'bm25_mixed.json'))
+    
+    # 从 JSON 加载并搜索
+    loaded_bm25_mixed_json = load_bm25(os.path.join(output_dir, 'bm25_mixed.json'), mixed_corpus)
+    print("混合语言查询（JSON加载）:", mixed_query)
+    results_json = loaded_bm25_mixed_json.search(mixed_query, top_k=3)
+    for doc_id, score in results_json:
+        print(f"文档ID: {doc_id}, 得分: {score:.4f}, 文本: {mixed_corpus[doc_id]}")
+    
+    # 创建并保存为 Pickle
+    bm25_mixed_pkl = create_bm25(mixed_corpus, 'mixed')
+    bm25_mixed_pkl.save(os.path.join(output_dir, 'bm25_mixed.pkl'))
+    
+    # 从 Pickle 加载并搜索
+    loaded_bm25_mixed_pkl = load_bm25(os.path.join(output_dir, 'bm25_mixed.pkl'), mixed_corpus)
+    print("\n混合语言查询（Pickle加载）:", mixed_query)
+    results_pkl = loaded_bm25_mixed_pkl.search(mixed_query, top_k=3)
+    for doc_id, score in results_pkl:
+        print(f"文档ID: {doc_id}, 得分: {score:.4f}, 文本: {mixed_corpus[doc_id]}")

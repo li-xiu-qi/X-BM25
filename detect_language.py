@@ -1,0 +1,20 @@
+from typing import List, Dict
+import re
+
+
+def detect_language(text: str) -> str:
+    """
+    功能描述: 检测文本主要语言（中文或英文），
+    因为jieba分词能兼容分割英文（空格），
+    所以这里只检测中文字符存在即可
+
+    参数:
+        text (str): 输入文本
+
+    返回值:
+        str: 'zh' 表示存在中文字符，'en' 表示不存在中文字符
+    """
+    chinese_chars = len(re.findall(r'[\u4e00-\u9fff]', text))
+
+    # 如果存在中文字符，按中文处理
+    return 'zh' if chinese_chars > 0 else 'en'
