@@ -10,7 +10,7 @@ from stopwords import (
     STOPWORDS_EN_PLUS,
     STOPWORDS_CHINESE,
 )
-from detect_language import detect_language
+from detect_language import tokenizer_detect_language
 
 # 抽象基类
 class AbstractBM25(ABC):
@@ -206,7 +206,7 @@ class MixedLanguageBM25(AbstractBM25):
 
     def _tokenize(self, text: str) -> List[str]:
         """根据检测到的语言选择相应的分词器"""
-        language = detect_language(text)
+        language = tokenizer_detect_language(text)
         if language == 'en':
             return self.english_bm25._tokenize(text)
         else:
