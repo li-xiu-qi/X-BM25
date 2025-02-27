@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List
+from typing import List, Tuple, Dict
 import math
 import jieba
 import Stemmer  # PyStemmer 库，用于英文词干提取
@@ -28,24 +28,24 @@ class AbstractBM25(ABC):
         """
         if not corpus:
             raise ValueError("Corpus cannot be empty")
-        self.corpus = corpus
-        self.k1 = k1
-        self.b = b
-        self.stopwords = set(stopwords)  # 转换为set以提高查找效率
-        self.doc_count = len(corpus)
+        self.corpus: List[str] = corpus
+        self.k1: float = k1
+        self.b: float = b
+        self.stopwords: set = set(stopwords)  # 转换为set以提高查找效率
+        self.doc_count: int = len(corpus)
 
         # 分词后的文档集合，由子类实现
-        self.tokenized_corpus = self._tokenize_corpus()
+        self.tokenized_corpus: List[List[str]] = self._tokenize_corpus()
 
         # 计算每个文档的长度（词数）
-        self.doc_lengths = [len(tokens) for tokens in self.tokenized_corpus]
+        self.doc_lengths: List[int] = [len(tokens) for tokens in self.tokenized_corpus]
 
         # 计算平均文档长度
-        self.avg_doc_length = sum(self.doc_lengths) / self.doc_count if self.doc_count > 0 else 0
+        self.avg_doc_length: float = sum(self.doc_lengths) / self.doc_count if self.doc_count > 0 else 0
 
         # 词频和文档频率
-        self.df = {}  # 文档频率
-        self.tf = []  # 词频矩阵
+        self.df: Dict[str, int] = {}  # 文档频率
+        self.tf: List[Dict[str, int]] = []  # 词频矩阵
         self._build_index()
 
     @abstractmethod
@@ -136,7 +136,7 @@ class AbstractBM25(ABC):
             filepath: 索引文件的路径（.json 或 .pkl）
             corpus: 原始文档集合，用于初始化
         Returns:
-            EnglishBM25 或 ChineseBM25 实例
+            EnglishBM25 或 ChineseBM25 实例 
         Raises:
             ValueError: 如果文件扩展名或语言不支持
         """
@@ -255,12 +255,14 @@ def load_bm25(filepath: str, corpus: List[str]):
     return AbstractBM25.load(filepath, corpus)
 
 # 通用的搜索函数
-def bm25_search(corpus: List[str], query: str, language: str = 'mixed', top_k: int = 5, k1: float = 1.5, b: float = 0.75, stopwords: tuple = None):
+def bm25_search(corpus: List[str], query: str, 
+                language: str = 'mixed', top_k: int = 5,
+                k1: float = 1.5, 
+                b: float = 0.75, 
+                stopwords: tuple = None) -> List[Tuple[int, float, str]]:
     """
     执行BM25搜索
     """
     bm25 = create_bm25(corpus, language, k1, b, stopwords)
     results = bm25.search(query, top_k)
     return [(doc_id, score, corpus[doc_id]) for doc_id, score in results]
-
-

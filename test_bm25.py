@@ -1,4 +1,4 @@
-from bm25 import load_bm25, create_bm25
+from bm25 import load_bm25, create_bm25, bm25_search
 import os
 
 
@@ -104,3 +104,12 @@ if __name__ == "__main__":
     results_pkl = loaded_bm25_mixed_pkl.search(mixed_query, top_k=3)
     for doc_id, score in results_pkl:
         print(f"文档ID: {doc_id}, 得分: {score:.4f}, 文本: {mixed_corpus[doc_id]}")
+
+
+    # 测试bm25_search
+    print("\n")
+    print("测试bm25_search")
+    results = bm25_search(corpus=english_corpus,query="machine learning")
+    print("英文查询:", "machine learning")
+    for doc_id, score,doc in results:
+        print(f"文档ID: {doc_id}, 得分: {score:.4f}, 文本: {doc}")
